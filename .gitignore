@@ -2,3 +2,6 @@ node_modules
 dist
 test-results
 playwright-report
+
+# 개인 사진 (앱에서는 각 기기의 IndexedDB에 저장됨, 저장소에 올리지 않음)
+편백이 사진/
