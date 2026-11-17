@@ -21,11 +21,12 @@ npm run preview    # serve the built dist/
 npm run test:e2e   # all Playwright specs, projects desktop-chrome + iphone-13
 npm run icons      # regenerate the PNG app icons in public/ (scripts/make-icons.mjs, uses Playwright Chromium)
 npx playwright test tests/<file>.spec.js -g "<test name>"   # single test, e.g. -g "AC-6"
+npx playwright test --project desktop-chrome                 # one project only (skip iphone-13)
 node -e "import('./src/utils/selfTest.js').then(m => console.log(m.runSelfTests().filter(r => !r.pass)))"   # pure-function self-test; [] means all pass
 ```
 
 - There is no linter or unit-test runner. `src/utils/selfTest.js` is the unit-level check: it tests the pure functions against the PRD's expected values (D+116 / 4개월차 on 2026-11-16; 107g/day and 27g/meal for 2.4kg at 3.8kcal/g). It also runs in the app (Settings → 자가 진단) and as `console.assert` in dev mode. Add a case there when you add or change a pure function.
-- `playwright.config.js` starts two servers: the dev server on 5173 (an already-running one is reused) and `npm run build && vite preview` on **4173**, which must be free. Only `tests/offline.spec.js` uses 4173, because the Service Worker exists only in builds.
+- `playwright.config.js` starts two servers: the dev server on 5173 (an already-running one is reused) and `npm run build && vite preview` on **4173**, which must be free. Only `tests/offline.spec.js` uses 4173, because the Service Worker exists only in builds. Playwright still starts both servers on every run, so even a single `-g` test runs a full build first and fails if 4173 is taken.
 - Only Chromium is installed for Playwright, so the iPhone 13 project runs on Chromium (390px + touch emulation).
 
 E2E conventions (`tests/helpers.js`):
