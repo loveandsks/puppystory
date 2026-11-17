@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+/*
+ * 색 토큰: 라이트/다크 값을 CSS 변수로 두고 Tailwind 색으로 연결한다.
+ * @theme inline → 유틸리티가 var(--c-*)를 직접 참조해서 다크 모드 전환이 바로 반영된다.
+ */
+:root {
+  --c-cream: #fff7ed;       /* 배경 */
+  --c-card: #ffffff;        /* 카드 */
+  --c-tint: #ffefdc;        /* 연한 피치 면 */
+  --c-line: #f8e1c8;        /* 경계선 */
+  --c-ink: #3f2a1e;         /* 본문 */
+  --c-cocoa: #7c4a2d;       /* 제목·강조 */
+  --c-muted: #86695a;       /* 보조 글자 */
+  --c-faint: #b29c8c;       /* 흐린 글자 */
+  --c-peach: #fdba74;       /* 포인트 */
+  --c-peach-strong: #f59e4b;
+  --c-on-peach: #5b3520;    /* 피치 위 글자 */
+  --c-ok: #2f7d4f;
+  --c-ok-bg: #e3f4e8;
+  --c-warn: #8a5a00;
+  --c-warn-bg: #fff1cc;
+  --c-danger: #c0352b;
+  --c-danger-bg: #fde5e2;
+  --c-sos: #e5484d;
+  --shadow-soft: 0 1px 2px rgb(124 74 45 / 0.06), 0 6px 20px rgb(124 74 45 / 0.08);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-cream: #1d1511;
+    --c-card: #2a201a;
+    --c-tint: #382a20;
+    --c-line: #4a3729;
+    --c-ink: #f5e9df;
+    --c-cocoa: #f7c79a;
+    --c-muted: #c9b3a1;
+    --c-faint: #93806f;
+    --c-peach: #f0a55e;
+    --c-peach-strong: #f7b978;
+    --c-on-peach: #2a170b;
+    --c-ok: #86d6a6;
+    --c-ok-bg: #1f3a2a;
+    --c-warn: #f2c25c;
+    --c-warn-bg: #3d3016;
+    --c-danger: #ff8f85;
+    --c-danger-bg: #4a1f1b;
+    --c-sos: #e5484d;
+    --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-cream: var(--c-cream);
+  --color-card: var(--c-card);
+  --color-tint: var(--c-tint);
+  --color-line: var(--c-line);
+  --color-ink: var(--c-ink);
+  --color-cocoa: var(--c-cocoa);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+  --color-peach: var(--c-peach);
+  --color-peach-strong: var(--c-peach-strong);
+  --color-on-peach: var(--c-on-peach);
+  --color-ok: var(--c-ok);
+  --color-ok-bg: var(--c-ok-bg);
+  --color-warn: var(--c-warn);
+  --color-warn-bg: var(--c-warn-bg);
+  --color-danger: var(--c-danger);
+  --color-danger-bg: var(--c-danger-bg);
+  --color-sos: var(--c-sos);
+  --shadow-soft: var(--shadow-soft);
+  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+
+html {
+  background: var(--c-cream);
+  /* 입력창에 포커스가 가면 하단 네비 위로 스크롤되게 */
+  scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  scroll-padding-top: 5rem;
+}
+body {
+  background: var(--c-cream);
+  color: var(--c-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+input,
+select,
+textarea {
+  color: var(--c-ink);
+}
+input[type='date'],
+input[type='time'] {
+  min-height: 2.75rem;
+}
+:focus-visible {
+  outline: 2px solid var(--c-peach-strong);
+  outline-offset: 2px;
+}
+
+/* 배지 획득 축하 (가볍게, 움직임 줄이기 설정 존중) */
+@keyframes pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes confetti {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(-36px) rotate(25deg); opacity: 0; }
+}
+.animate-pop { animation: pop 0.45s ease-out both; }
+.animate-confetti { animation: confetti 0.9s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop,
+  .animate-confetti { animation: none; }
+}
