@@ -74,6 +74,7 @@ const inRange = (v, min, max, fallback) => (num(v) !== null && v >= min && v <= 
 
 function fixProfile(p) {
   const out = { ...DEFAULT_PROFILE, ...p }
+  out.onboarded = typeof p.onboarded === 'boolean' ? p.onboarded : true
   out.name = isStr(out.name) && out.name.trim() ? out.name : DEFAULT_PROFILE.name
   out.breed = str(out.breed, DEFAULT_PROFILE.breed)
   if (!isValidDateString(out.birthDate)) out.birthDate = DEFAULT_PROFILE.birthDate

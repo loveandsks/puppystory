@@ -1,5 +1,5 @@
 // 리뷰에서 찾은 버그의 회귀 테스트: 저장 실패 처리, 렌더 오류 격리
-import { expect, openApp, seed, test } from './helpers.js'
+import { TODAY, completeOnboarding, expect, openApp, seed, test } from './helpers.js'
 
 test('localStorage 용량 초과 → 경고 배너, 앱은 계속 동작, 공간이 생기면 다시 저장', async ({ page }) => {
   await openApp(page, 'growth')
@@ -38,7 +38,11 @@ test('localStorage를 쓸 수 없는 브라우저 → 저장 불가 안내, 화�
       },
     })
   })
-  await openApp(page)
+  // 저장분이 없으니 처음 연 사람처럼 정보 입력부터 (입력 화면에서도 저장 불가를 먼저 알린다)
+  await page.clock.setFixedTime(new Date(TODAY))
+  await page.goto('./#/')
+  await expect(page.getByTestId('save-error')).toContainText('저장할 수 없어요')
+  await completeOnboarding(page)
   await expect(page.getByTestId('save-error')).toContainText('저장할 수 없어요')
   await page.getByRole('checkbox', { name: /오늘의 빗질/ }).check()
   await expect(page.getByTestId('brush-streak')).toContainText('연속 1일')

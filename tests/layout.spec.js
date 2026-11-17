@@ -1,7 +1,7 @@
 // 추가 검증: 360px 가로 스크롤, 화면별 콘솔 에러 0개, 응급 카드 면책 문구·긴급도
 import { DHPPL_PARTIAL, expect, openApp, seed, test, weight } from './helpers.js'
 
-const PAGES = ['', 'growth', 'diet', 'health', 'care', 'gallery', 'emergency', 'settings']
+const PAGES = ['', 'growth', 'diet', 'health', 'care', 'gallery', 'guides', 'community', 'emergency', 'settings']
 
 // 화면을 꽉 채운 상태에서 확인하려고 데이터를 심어 둔다
 const RICH = {

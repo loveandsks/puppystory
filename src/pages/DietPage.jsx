@@ -82,7 +82,12 @@ function FoodCalculator() {
           {latest ? `최근 기록 ${latest.kg}kg (${latest.date})을 불러왔어요.` : '성장 탭에서 체중을 기록하면 자동으로 불러와요.'}
         </p>
         <Field label="급여 중인 사료">
-          <select value={feeding.currentFoodId ?? ''} onChange={(e) => setCurrentFood(e.target.value)} className={inputClass}>
+          <select value={food ? food.id : ''} onChange={(e) => setCurrentFood(e.target.value)} disabled={foods.length === 0} className={inputClass}>
+            {!food && (
+              <option value="" disabled>
+                {foods.length ? '사료를 골라 주세요' : '아래 사료 목록에서 먼저 추가해 주세요'}
+              </option>
+            )}
             {foods.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name} ({f.kcalPerG} kcal/g)
@@ -332,6 +337,11 @@ function FoodDatabase() {
   return (
     <Card title="사료 목록" icon="📦" id="food-db">
       {foods.some(isExampleKcal) && <p className="mb-2 text-xs text-warn">기본 칼로리는 예시값이에요. 포장지 표기로 꼭 확인·수정해 주세요.</p>}
+      {foods.length === 0 && (
+        <p className="mb-2 text-sm text-muted" data-testid="no-foods">
+          먹이는 사료의 이름과 칼로리(포장지 뒷면의 kcal/kg 또는 kcal/g)를 추가하면 급여량을 계산해 드려요.
+        </p>
+      )}
       <ul className="mb-3 divide-y divide-line text-sm">
         {foods.map((f) => (
           <li key={f.id} className="flex items-center gap-2 py-1.5">

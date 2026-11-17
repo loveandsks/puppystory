@@ -94,7 +94,7 @@ export function buildIcs(state, today = toLocalDateString()) {
           time: '09:00',
           durationMin: 60,
           summary: `💉 ${profile.name} ${v.name} ${d.n}차 접종`,
-          description: '앱: 편백이 성장일기',
+          description: '앱: Puppy 성장스토리',
           alarms: ['P3D', 'PT0M'], // 3일 전 09:00, 당일 09:00
         }),
       )

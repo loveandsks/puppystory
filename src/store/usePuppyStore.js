@@ -15,6 +15,7 @@ import { buildSchedule } from '../utils/feeding.js'
 import { updateBadges } from '../utils/grooming.js'
 import { makeId } from '../utils/id.js'
 import { pruneFiredKeys } from '../utils/notify.js'
+import { onboardingPatch } from '../utils/profile.js'
 import { sanitizeData } from '../utils/sanitize.js'
 import { buildDoses, rescheduleDoses } from '../utils/vaccine.js'
 import { useUiStore } from './useUiStore.js'
@@ -116,6 +117,17 @@ export const usePuppyStore = create(
 
       // ── 프로필 ─────────────────────────────────────
       updateProfile: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
+      /**
+       * 첫 화면("우리 아이 정보 입력")을 마친 새 견주. 입력값으로 프로필을 채우고,
+       * 처음 만든 사람(편백이)용 예시인 사료·매트·하네스 목록은 비운 채 시작한다.
+       */
+      completeOnboarding: (input) =>
+        set((s) => ({
+          profile: { ...s.profile, ...onboardingPatch(input) },
+          foods: [],
+          feeding: { ...s.feeding, currentFoodId: null },
+          gear: { mats: [], harnesses: [] },
+        })),
 
       // ── 체중 (F-1.2) ──────────────────────────────
       /** 같은 날짜 기록이 있으면 그 기록을 대체한다 (덮어쓰기 확인은 화면에서). 저장된 id 반환 */
@@ -133,7 +145,13 @@ export const usePuppyStore = create(
 
       // ── 사료·급여 (F-2.1 ~ F-2.3) ─────────────────
       // verified: 사용자가 포장지 값으로 확인했는지 (기본 사료는 예시값이라 false)
-      addFood: ({ name, kcalPerG }) => set((s) => ({ foods: [...s.foods, { id: makeId('food'), name, kcalPerG, verified: true }] })),
+      // 급여 중인 사료가 없으면(첫 사료) 새 사료를 급여 중으로 고른다
+      addFood: ({ name, kcalPerG }) =>
+        set((s) => {
+          const food = { id: makeId('food'), name, kcalPerG, verified: true }
+          const hasCurrent = s.foods.some((f) => f.id === s.feeding.currentFoodId)
+          return { foods: [...s.foods, food], feeding: hasCurrent ? s.feeding : { ...s.feeding, currentFoodId: food.id } }
+        }),
       updateFood: (id, patch) => set((s) => ({ foods: replaceById(s.foods, id, (f) => ({ ...f, ...patch })) })),
       deleteFood: (id) =>
         set((s) => {

@@ -25,12 +25,14 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 60_000,
     },
-    // Service Worker는 빌드본에서만 등록되므로 오프라인 새로고침 테스트(tests/offline.spec.js)는 preview로 확인한다
+    // Service Worker는 빌드본에서만 등록되므로 오프라인 새로고침 테스트(tests/offline.spec.js)는 preview로 확인한다.
+    // 커뮤니티 테스트(tests/community.spec.js)도 여기서: 가짜 Supabase 주소를 넣고 빌드한다 (개발 서버는 이미 떠 있는 것을 재사용할 수 있어 환경 변수를 보장할 수 없다)
     {
       command: 'npm run build && npx vite preview --port 4173 --strictPort',
       url: 'http://localhost:4173/',
       reuseExistingServer: false,
       timeout: 120_000,
+      env: { ...process.env, VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test' },
     },
   ],
 })

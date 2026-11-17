@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-A puppy growth diary web app (Korean UI) for one dog, "편백이" (a 꼬숑 puppy, born 2026-07-23). It is client-only: no server, no login, no external APIs, and every feature must work offline. The user writes in Korean, so reply and write UI text in Korean.
+"Puppy 성장스토리": a puppy growth diary web app (Korean UI) for beginner dog owners, deployed at https://loveandsks.github.io/puppystory/ (GitHub Pages; pushing to `main` deploys). It started as a diary for one dog, "편백이" (a 꼬숑 puppy, born 2026-07-23), whose values are still the defaults in `src/data/defaults.js` and in tests. The diary is client-only: no server, no login, no external APIs, and every diary feature must work offline. The one exception is the community board (see "Together tab" below). The user writes in Korean, so reply and write UI text in Korean.
 
 - `PRD.md` is the spec. Feature IDs (`F-1.1` … `F-6.6`) and acceptance criteria (`AC-1` … `AC-15`, section 9) are the reference for behavior and expected values.
 - `PROMPTS.md` is the staged build plan (stages 0 → 4). All stages are done; new work comes as individual requests.
 - `REVIEW.md` is the stage 4 review: the PRD checklist, the bug/risk list (R1–R16), and in section 4 which fixes were applied and what is still open. Check it before starting on a "remaining" item.
-- **Stack decision overrides the PRD:** PRD §1.3 and §6 describe a vanilla single-file `index.html`. The confirmed stack is React + Vite + Tailwind CSS v4 + React Router (HashRouter) + Zustand persist. Keep the PRD's other constraints: few dependencies, SVG charts without a library, a hand-written EXIF parser, a hand-written Service Worker.
+- **Stack decision overrides the PRD:** PRD §1.3 and §6 describe a vanilla single-file `index.html`. The confirmed stack is React + Vite + Tailwind CSS v4 + React Router (HashRouter) + Zustand persist. Keep the PRD's other constraints: few dependencies, SVG charts without a library, a hand-written EXIF parser, a hand-written Service Worker. Two later, approved dependencies: `pdfjs-dist` (guide PDF viewer) and `@supabase/supabase-js` (community board). Both are loaded only with `import()` from the screens that need them.
+- Decided against: generative-AI answers for symptoms (2026-11-17). Symptom and emergency features stay rule-based.
 
 ## Commands
 
@@ -26,13 +27,15 @@ node -e "import('./src/utils/selfTest.js').then(m => console.log(m.runSelfTests(
 ```
 
 - There is no linter or unit-test runner. `src/utils/selfTest.js` is the unit-level check: it tests the pure functions against the PRD's expected values (D+116 / 4개월차 on 2026-11-16; 107g/day and 27g/meal for 2.4kg at 3.8kcal/g). It also runs in the app (Settings → 자가 진단) and as `console.assert` in dev mode. Add a case there when you add or change a pure function.
-- `playwright.config.js` starts two servers: the dev server on 5173 (an already-running one is reused) and `npm run build && vite preview` on **4173**, which must be free. Only `tests/offline.spec.js` uses 4173, because the Service Worker exists only in builds. Playwright still starts both servers on every run, so even a single `-g` test runs a full build first and fails if 4173 is taken.
+- `playwright.config.js` starts two servers: the dev server on 5173 (an already-running one is reused) and `npm run build && vite preview` on **4173**, which must be free. `tests/offline.spec.js` uses 4173 because the Service Worker exists only in builds. `tests/community.spec.js` uses 4173 too: that build gets a fake Supabase config through the webServer `env` (`VITE_SUPABASE_URL=https://test.supabase.co`), because a reused dev server can't be given env vars. The dev server has no Supabase config, so there the community shows "준비 중". Playwright still starts both servers on every run, so even a single `-g` test runs a full build first and fails if 4173 is taken.
 - Only Chromium is installed for Playwright, so the iPhone 13 project runs on Chromium (390px + touch emulation).
 
 E2E conventions (`tests/helpers.js`):
 - Every test fails on any console error (auto fixture `consoleErrors`). A test that expects an error must assert on the array and then empty it.
 - `openApp` fixes "today" at 2026-11-16 10:00, and `moveToday` changes the date and reloads. Tests that need timers to advance use `page.clock.install` + `runFor`/`fastForward` instead.
 - `seed` writes partial store state before the first load. Missing keys get filled by `normalizeData`.
+- An auto fixture marks the profile as onboarded so tests skip the "우리 아이 정보 입력" screen. Use `test.use({ freshStart: true })` to start like a new user, and `completeOnboarding(page)` to fill that screen.
+- `tests/supabaseMock.js` is an in-memory fake of the Supabase REST/auth API (`installSupabaseMock`, `seedSession`), used by the community and offline specs.
 - `makeJpeg` builds a JPEG with an EXIF date.
 - `tests/acceptance.spec.js` maps 1:1 to AC-1..AC-15. `tests/fixes.spec.js` and `tests/robustness.spec.js` cover the REVIEW.md fixes.
 
@@ -64,7 +67,7 @@ E2E conventions (`tests/helpers.js`):
 
 **IDs:** use `makeId()` from `src/utils/id.js`, not `crypto.randomUUID()` directly. `randomUUID` is undefined on a non-secure origin, such as a phone testing over `http://192.168.x.x`.
 
-**Pure logic in `src/utils`:** D-Day, feeding amounts, vaccine schedules, streaks, care due dates, triage, sanitizing and backup reminders are pure functions with no browser or store imports, so `selfTest.js` can run them in Node. Keep it that way. `backup.js`, `calendarExport.js` and `image.js` are the browser-side exceptions.
+**Pure logic in `src/utils`:** D-Day, feeding amounts, vaccine schedules, streaks, care due dates, triage, sanitizing and backup reminders are pure functions with no browser or store imports, so `selfTest.js` can run them in Node. Keep it that way. `backup.js`, `calendarExport.js` and `image.js` are the browser-side exceptions. Also pure and covered by `selfTest.js`: `profile.js` (onboarding checks), `guides.js` (guide list, URLs), `community.js` (post/comment/nickname checks, relative time, server error messages).
 - Weight alerts are not stored. `analyzeWeights` recomputes them from the sorted weights, so editing or deleting a middle record stays correct.
 - Feeding uses a "feeding day" (`getFeedingDay`): a slot earlier than `firstMealTime` (for example 01:00) belongs to the previous day's schedule.
 
@@ -74,8 +77,18 @@ E2E conventions (`tests/helpers.js`):
   - a sticky `AppHeader` (⚙️ settings link with the backup badge, D-Day text, SOS link to `/emergency`)
   - `SaveErrorBanner` and `NotificationCenter`
   - each route wrapped in `ErrorBoundary`, keyed by path, so a render error replaces only that screen while the nav and SOS keep working
-  - a fixed `BottomNav` with 6 tabs: home, growth, diet, health, care, gallery
+  - a fixed `BottomNav` with 7 tabs: home, growth, diet, health, care, gallery, and 함께 (`/guides`, also highlighted on `/community/*`)
 - `/emergency` and `/settings` are reached only from the header. Unknown routes redirect to `/`.
+- **Onboarding:** `App.jsx` shows `components/Onboarding.jsx` instead of the routes while `profile.onboarded` is false (name, birth date, breed, optional adult weight, or restore from a backup file). A fresh install starts with `onboarded: false`. `fixProfile` in `sanitize.js` treats a stored or imported profile *without* the flag as onboarded, so existing users and old backups skip the screen.
+
+**Together tab (함께):** `components/TogetherTabs.jsx` switches between two screens.
+- **Guides** (`pages/GuidesPage.jsx`, `pages/GuideViewerPage.jsx`): PDFs placed in `public/guides/` (`GUIDES.md` is the user's how-to). The `guidesIndex` plugin in `vite.config.js` builds `guides/index.json` from the folder (file name = title, a leading `01_` only sorts, `v` = content hash), emitting it at build time and serving it from middleware in dev. The viewer renders pages to canvas with pdf.js (`src/pdf/pdfjs.js`, **legacy** build because the modern one needs very new browser APIs), only for pages near the viewport, DPR capped at 2, with range requests off so the whole file can be cached.
+- **Community** (`src/community/`, lazy route `community/*`): Supabase (Postgres + Auth) with Kakao login, text posts and comments, reports, nicknames. Reading is public; writing needs login.
+  - All permissions are enforced server-side in `supabase/schema.sql` (RLS, column grants, triggers for rate limits, auto-hide after 3 reports, comment counts, `am_i_admin`, `delete_my_account`). The browser only has the publishable key, so never rely on client checks for security. Keep the length limits in `utils/community.js` equal to the SQL `check` constraints.
+  - `config.js` holds the project URL and publishable key (empty → "준비 중" screen; Vite then drops the Supabase code from the bundle). Never put a secret/service_role key in the repo. `COMMUNITY.md` is the user's setup guide (Supabase, Kakao 비즈 앱, redirect URLs, admin SQL).
+  - Login uses PKCE (`flowType: 'pkce'`) because the implicit flow returns tokens in `#`, which collides with HashRouter. `redirectTo` is the page URL without a hash. `returnHash.js` saves the current `#/community...` before login and `main.jsx` restores it on return (`?code=` / `?error=`); supabase-js exchanges the code and strips `?code=` itself.
+  - Supabase stores its session in localStorage under `sb-<ref>-auth-token`. It is not part of the diary store or backups.
+  - The community never touches diary data; the diary must keep working offline and without the community.
 
 **Notifications** (`components/NotificationCenter.jsx`, logic in `utils/notify.js`): the app checks every 30 seconds while it is open.
 - `notifications.firedKeys` (`{key: date}`) prevents re-firing. Before each check the app re-reads keys another tab just wrote, so two tabs don't both fire.
@@ -86,7 +99,8 @@ E2E conventions (`tests/helpers.js`):
 - The `serviceWorker` plugin in `vite.config.js` fills in the cache version and the hashed build file list, and emits `dist/sw.js`.
 - `main.jsx` registers it only in production builds over http(s). It does nothing under `npm run dev` or `file://`.
 - Page loads are network-first (3s timeout) and fall back to the cached `index.html`. Other files are cache-first. Cache lookups use `ignoreVary` because `vite preview` sends `Vary` headers.
-- The precache list also includes every file in `public/` (manifest, icons), except hosting config files (`_headers`, `_redirects`).
+- The precache list also includes every file in `public/` (manifest, icons), except hosting config files (`_headers`, `_redirects`) and `public/guides/`.
+- **Lazy files** are not precached: chunks containing `pdfjs-dist` or `@supabase`, the pdf.js worker, and the guide PDFs (`isLazyLibrary` / `guideList` in `vite.config.js`, injected as `__LAZY__`). The SW caches them on first use in a separate `puppy-lazy` cache that survives version changes, and on activate it deletes entries that are no longer in the current list. This keeps installs and updates small while letting an opened guide work offline.
 
 **Deployment / PWA:** `DEPLOY.md` is the user-facing guide (Netlify Drop, Cloudflare Pages, Vercel, GitHub Pages).
 - `public/manifest.webmanifest` plus `public/*.png` icons make the app installable. `index.html` links them with absolute `/` paths, and Vite rewrites them to `./` because of `base: './'`.

@@ -8,6 +8,8 @@ export const DEFAULT_PROFILE = {
   targetRangeKg: [5, 8],
   weightAlertPct: 10,
   puppyFactor: 3.0,
+  // 처음 열 때 "우리 아이 정보 입력"을 마쳤는지. 이 값이 없는 옛 저장분·백업은 이미 쓰던 사람이라 true로 본다 (sanitize.js)
+  onboarded: false,
 }
 
 // kcal/g은 초기값. 포장지 표기로 꼭 확인·수정해야 한다 (PRD F-2.1)

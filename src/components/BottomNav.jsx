@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 
 const TABS = [
   { to: '/', label: '홈', icon: '🏠', end: true },
@@ -8,6 +8,8 @@ const TABS = [
   { to: '/health', label: '건강', icon: '💉' },
   { to: '/care', label: '케어', icon: '✂️' },
   { to: '/gallery', label: '앨범', icon: '🖼️' },
+  // 가이드·커뮤니티 두 화면을 묶은 탭 (화면 위의 TogetherTabs로 전환)
+  { to: '/guides', label: '함께', icon: '🤝', also: ['/community'] },
 ]
 
 const TYPING = 'input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=button]), textarea, select'
@@ -31,30 +33,33 @@ function useKeyboardOpen() {
 
 export default function BottomNav() {
   const keyboardOpen = useKeyboardOpen()
+  const { pathname } = useLocation()
+  const inAlso = (tab) => tab.also?.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   return (
     <nav
       aria-label="하단 메뉴"
       hidden={keyboardOpen}
       className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
-      <ul className="grid h-16 grid-cols-6 px-1">
+      <ul className="grid h-16 grid-cols-7 px-0.5">
         {TABS.map((tab) => (
           <li key={tab.to}>
             <NavLink
               to={tab.to}
               end={tab.end}
-              className={({ isActive }) =>
-                `group flex h-full flex-col items-center justify-center gap-0.5 text-[11px] transition-colors ${
+              className={({ isActive: active }) => {
+                const isActive = active || inAlso(tab)
+                return `group flex h-full flex-col items-center justify-center gap-0.5 text-[11px] transition-colors ${
                   isActive ? 'font-extrabold text-cocoa' : 'text-faint'
                 }`
-              }
+              }}
             >
-              {({ isActive }) => (
+              {({ isActive: active }) => (
                 <>
                   <span
                     aria-hidden
                     className={`grid h-7 w-11 place-items-center rounded-full text-lg leading-none transition ${
-                      isActive ? 'bg-peach/40' : 'grayscale-[40%]'
+                      active || inAlso(tab) ? 'bg-peach/40' : 'grayscale-[40%]'
                     }`}
                   >
                     {tab.icon}

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import App from './App.jsx'
+import { restoreReturnHash } from './community/returnHash.js'
 import './index.css'
 
 // 개발 모드: 계산 로직 자가 진단 (실패하면 콘솔에 표시)
@@ -18,6 +19,9 @@ navigator.storage?.persist?.().catch(() => {})
 if (import.meta.env.PROD && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}))
 }
+
+// 카카오 로그인에서 돌아왔으면(?code=) 로그인 전에 보던 커뮤니티 화면 주소(#/community/...)를 되살린다
+restoreReturnHash()
 
 // HashRouter: 서버 rewrite 설정 없이도 새로고침/딥링크가 깨지지 않는다 (정적 호스팅·로컬 파일용)
 createRoot(document.getElementById('root')).render(

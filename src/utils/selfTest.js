@@ -5,6 +5,9 @@ import { analyzeWeights, growthPct, weeklyChangePct } from './growth.js'
 import { buildSchedule, calcDailyFood, getFeedingDay, isExampleKcal, parseWeightInput } from './feeding.js'
 import { backupReminder } from './backupReminder.js'
 import { sanitizeData } from './sanitize.js'
+import { onboardingPatch, validateOnboarding } from './profile.js'
+import { cleanGuideList, formatSize, guideUrl } from './guides.js'
+import { communityErrorMessage, relativeTime, validateComment, validateNickname, validatePost } from './community.js'
 import { summarizePotty } from './potty.js'
 import { buildDoses, rescheduleDoses } from './vaccine.js'
 import { filterReceipts, pendingSummary } from './receipts.js'
@@ -105,7 +108,27 @@ function cases() {
     ['백업 리마인드: 30일 지나면', backupReminder('2026-10-17', TODAY, true).due, true],
     ['가져오기 검사: 날짜 없는 체중·사진 제외', sanitizeData({ weights: [{ id: 'a', kg: 2 }, { id: 'b', date: TODAY, kg: 2.4 }], photos: [{ id: 'p' }] }).dropped, 2],
     ['가져오기 검사: 빈 이름은 기본값', sanitizeData({ profile: { name: ' ' } }).data.profile.name, '편백이'],
+    ['첫 화면: 옛 저장분은 입력 끝난 것으로', sanitizeData({ profile: { name: '편백이' } }).data.profile.onboarded, true],
+    ['첫 화면: 새로 시작하면 입력 화면', sanitizeData({ profile: { onboarded: false } }).data.profile.onboarded, false],
+    ['첫 화면: 이름·견종 빠지면 오류', Object.keys(validateOnboarding({ name: ' ', birthDate: BIRTH, breed: '' }, TODAY)).join(), 'name,breed'],
+    ['첫 화면: 미래 생일은 오류', Object.keys(validateOnboarding({ name: '콩이', birthDate: '2026-11-17', breed: '믹스' }, TODAY)).join(), 'birthDate'],
+    ['첫 화면: 성견 4kg → 범위 3.2~4.8', onboardingPatch({ name: '콩이', birthDate: BIRTH, breed: '말티즈', targetWeightKg: '4' }).targetRangeKg.join('~'), '3.2~4.8'],
+    ['첫 화면: 체중 비우면 기존 값 유지', 'targetWeightKg' in onboardingPatch({ name: '콩이', birthDate: BIRTH, breed: '믹스', targetWeightKg: '' }), false],
     ['가져오기 검사: 영수증 빠진 배열 채움', sanitizeData({ receipts: [{ id: 'r', visitDate: TODAY, amount: 1000, status: 'pending' }] }).data.receipts[0].imageIds.length, 0],
+    ['가이드 용량 표시: KB', formatSize(2048), '2KB'],
+    ['가이드 용량 표시: MB', formatSize(1.25 * 1024 * 1024), '1.3MB'],
+    ['가이드 주소: 한글·공백 인코딩', guideUrl({ file: '셀프 미용.pdf', v: 'abc' }), './guides/%EC%85%80%ED%94%84%20%EB%AF%B8%EC%9A%A9.pdf?v=abc'],
+    ['가이드 목록 검사: 깨진 항목 제외', cleanGuideList([{ file: 'a.pdf', title: 'a', v: '1' }, { title: 'x' }, null]).length, 1],
+    ['커뮤니티: 빈 제목·내용 오류', Object.keys(validatePost({ category: 'tip', title: ' ', body: '' })).join(), 'title,body'],
+    ['커뮤니티: 81자 제목 오류', 'title' in validatePost({ category: 'tip', title: '가'.repeat(81), body: '내용' }), true],
+    ['커뮤니티: 정상 글', Object.keys(validatePost({ category: 'question', title: '배변 훈련', body: '어떻게 하나요?' })).length, 0],
+    ['커뮤니티: 답글 1000자까지', validateComment('가'.repeat(1000)), null],
+    ['커뮤니티: 닉네임 특수문자 불가', validateNickname('콩이!') !== null, true],
+    ['커뮤니티: 운영자 사칭 불가', validateNickname('운영자콩') !== null, true],
+    ['커뮤니티: 닉네임 정상', validateNickname('콩이맘_2'), null],
+    ['커뮤니티: 5분 전', relativeTime('2026-11-16T09:55:00', new Date('2026-11-16T10:00:00').getTime()), '5분 전'],
+    ['커뮤니티: 일주일 넘으면 날짜', relativeTime('2026-11-01T09:00:00', new Date('2026-11-16T10:00:00').getTime()), '2026.11.01'],
+    ['커뮤니티: 도배 오류 문구', communityErrorMessage({ message: 'rate_limited', code: 'P0001' }).startsWith('짧은 시간'), true],
     ['사료 예시값 표시', isExampleKcal({ id: 'food_monge_bwild', kcalPerG: 3.8 }), true],
     ['사료 예시값: 확인하면 해제', isExampleKcal({ id: 'food_monge_bwild', kcalPerG: 3.8, verified: true }), false],
     ['오늘 날짜 문자열 형식', /^\d{4}-\d{2}-\d{2}$/.test(toLocalDateString()), true],

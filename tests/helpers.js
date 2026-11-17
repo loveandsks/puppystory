@@ -9,6 +9,19 @@ export const TODAY = '2026-11-16T10:00:00'
  * (테스트마다 새 컨텍스트라 localStorage·IndexedDB는 항상 비어 있는 상태에서 시작한다)
  */
 export const test = base.extend({
+  // true면 처음 연 사람처럼 시작한다 ("우리 아이 정보 입력" 화면). 기본은 입력을 마친 상태 (tests/onboarding.spec.js만 true)
+  freshStart: [false, { option: true }],
+  skipOnboarding: [
+    async ({ page, freshStart }, use) => {
+      if (!freshStart) {
+        await page.addInitScript((key) => {
+          if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ state: { profile: { onboarded: true } }, version: 1 }))
+        }, STORAGE_KEY)
+      }
+      await use()
+    },
+    { auto: true },
+  ],
   consoleErrors: [
     async ({ page }, use) => {
       const errors = []
@@ -29,6 +42,17 @@ export async function openApp(page, path = '', time = TODAY) {
   await expect(page.getByTestId('dday-header')).toBeVisible()
 }
 
+/** "우리 아이 정보 입력" 화면 채우고 시작하기 */
+export async function completeOnboarding(page, { name = '콩이', birthDate = '2026-07-23', breed = '말티즈', targetWeightKg = '' } = {}) {
+  const form = page.getByRole('form', { name: '우리 아이 정보 입력' })
+  await form.getByLabel('이름').fill(name)
+  await form.getByLabel('생년월일').fill(birthDate)
+  await form.getByLabel('견종').fill(breed)
+  if (targetWeightKg) await form.getByLabel(/성견 예상 체중/).fill(targetWeightKg)
+  await form.getByRole('button', { name: '시작하기' }).click()
+  await expect(page.getByTestId('dday-header')).toBeVisible()
+}
+
 /** 오늘을 바꾸고 새로고침 (앱은 새로고침·자정에 오늘 날짜를 다시 읽는다) */
 export async function moveToday(page, time) {
   await page.clock.setFixedTime(new Date(time))
@@ -36,8 +60,9 @@ export async function moveToday(page, time) {
   await expect(page.getByTestId('dday-header')).toBeVisible()
 }
 
-/** 첫 로드 전에 localStorage에 데이터 심기 (새로고침 때는 다시 심지 않음) */
+/** 첫 로드 전에 localStorage에 데이터 심기 (새로고침 때는 다시 심지 않음). profile이 없으면 입력을 마친 기본 프로필 */
 export async function seed(page, state) {
+  state = { ...state, profile: state.profile ?? { onboarded: true } }
   await page.addInitScript(
     ([key, s]) => {
       if (!localStorage.getItem('e2e-seeded')) {

@@ -79,7 +79,7 @@ export default function GrowthPage() {
               <GrowthChart weights={sorted} analysis={analysis} profile={profile} />
             </div>
             <p className="mt-1 text-center text-xs text-faint">
-              주황 띠: 꼬숑 성견 예상 {profile.targetRangeKg[0]}~{profile.targetRangeKg[1]}kg · 점을 누르면 자세히 보여요
+              주황 띠: {profile.breed} 성견 예상 {profile.targetRangeKg[0]}~{profile.targetRangeKg[1]}kg · 점을 누르면 자세히 보여요
             </p>
           </>
         ) : (

@@ -161,7 +161,7 @@ function Guide({ onTriage }) {
 }
 
 function SymptomCard({ card, open, onToggle, onTriage }) {
-  const { vaccinesDone } = usePuppyInfo()
+  const { profile, vaccinesDone } = usePuppyInfo()
   return (
     <article
       className={`overflow-hidden rounded-3xl border-l-8 bg-card shadow-soft ${
@@ -185,7 +185,7 @@ function SymptomCard({ card, open, onToggle, onTriage }) {
           {card.unvaccinatedNote && (
             <p className={`rounded-xl p-2 font-bold ${vaccinesDone ? 'bg-tint text-warn' : 'bg-danger-bg text-danger'}`} data-testid="unvaccinated-note">
               ⚠️ {card.unvaccinatedNote}
-              {!vaccinesDone && ' — 편백이는 아직 종합백신 접종이 끝나지 않았어요.'}
+              {!vaccinesDone && ` — ${profile.name}의 종합백신 접종이 아직 끝나지 않았어요.`}
             </p>
           )}
           <Section title="의심할 수 있는 원인" items={card.causes} />
